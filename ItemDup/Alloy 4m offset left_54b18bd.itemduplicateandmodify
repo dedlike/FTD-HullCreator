@@ -1,0 +1,99 @@
+{
+  "SizeInfo": {
+    "ViewTheseOptions": false,
+    "SizePos": {
+      "x": 0,
+      "y": 0,
+      "z": 4
+    },
+    "SizeNeg": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "VolumeFactor": 0.5,
+    "VolumeBuoyancyExtraFactor": 1.0,
+    "ArrayPositionsUsed": 5,
+    "LocalCenter": "0,0,2"
+  },
+  "DragSettings": {
+    "DragClearancePositions": [
+      {
+        "x": 0,
+        "y": 1,
+        "z": 1
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "z": 5
+      }
+    ],
+    "DragFactorNeg": "1,1,1",
+    "DragFactorPos": "1,1,0.1",
+    "DragStopper": true,
+    "ViewTheseOptions": false,
+    "Geometry": 76
+  },
+  "DisplayName": "###Core_Structural.54b18bde-2698-4840-a2aa-a37efba89ff4_displayName#?!Alloy 4m offset left",
+  "InventoryNameOverride": "###Core_Structural.54b18bde-2698-4840-a2aa-a37efba89ff4_inventoryNameOverride#?!4m offset left",
+  "CategoryNameOverride": "",
+  "IdToDuplicate": {
+    "Reference": {
+      "Guid": "3cc75979-18ac-46c4-9a5b-25b327d99410",
+      "Name": "Light-weight Alloy Block"
+    },
+    "IsValidReference": true
+  },
+  "MeshReference": {
+    "Reference": {
+      "Guid": "411f35c7-1a84-4fa6-8b02-48d5197b8764",
+      "Name": "Wood offset slope (left) (4m)"
+    },
+    "IsValidReference": true
+  },
+  "MaterialReference": {
+    "Reference": {
+      "Guid": "00000000-0000-0000-0000-000000000000",
+      "Name": ""
+    },
+    "IsValidReference": false
+  },
+  "CostWeightHealthScaling": 2.5,
+  "CostScaling": 1.0,
+  "HealthScaling": 1.25,
+  "ArmourScaling": 1.0,
+  "WeightScaling": 1.0,
+  "VolumeScaling": 1.0,
+  "change_SizeInfo": true,
+  "change_DragSettings": true,
+  "InventoryXPosition": 2,
+  "InventoryYPosition": 4,
+  "InventoryTabOrVariantId": {
+    "Reference": {
+      "Guid": "c099b76c-f011-4c87-ad8e-20c968c1eb76",
+      "Name": "Alloy 1m to 2m slope transition left"
+    },
+    "IsValidReference": true
+  },
+  "DisplayOnInventory": true,
+  "MirrorLaterialFlipReplacementReference": {
+    "Reference": {
+      "Guid": "fdba2b5d-3570-43fb-a9e1-10a0c0bba0ef",
+      "Name": "Alloy 4m offset right"
+    },
+    "IsValidReference": true
+  },
+  "MirrorVerticalFlipReplacementReference": {
+    "Reference": {
+      "Guid": "fdba2b5d-3570-43fb-a9e1-10a0c0bba0ef",
+      "Name": "Alloy 4m offset right"
+    },
+    "IsValidReference": true
+  },
+  "ComponentId": {
+    "Guid": "54b18bde-2698-4840-a2aa-a37efba89ff4",
+    "Name": "Alloy 4m offset left"
+  },
+  "Description": "###Core_Structural.54b18bde-2698-4840-a2aa-a37efba89ff4_description#?!A alloy 5m slope that offsets 4m slopes."
+}

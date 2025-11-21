@@ -1,0 +1,99 @@
+{
+  "SizeInfo": {
+    "ViewTheseOptions": false,
+    "SizePos": {
+      "x": 0,
+      "y": 0,
+      "z": 2
+    },
+    "SizeNeg": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "VolumeFactor": 0.5,
+    "VolumeBuoyancyExtraFactor": 1.0,
+    "ArrayPositionsUsed": 3,
+    "LocalCenter": "0,0,1"
+  },
+  "DragSettings": {
+    "DragClearancePositions": [
+      {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "z": 3
+      }
+    ],
+    "DragFactorNeg": "1,1,1",
+    "DragFactorPos": "1,1,0.132",
+    "DragStopper": true,
+    "ViewTheseOptions": false,
+    "Geometry": 6
+  },
+  "DisplayName": "###Core_Structural.a3ea61a8-018c-4277-afd9-ac0a34faa759_displayName#?!Alloy slope (3m)",
+  "InventoryNameOverride": "###Core_Structural.a3ea61a8-018c-4277-afd9-ac0a34faa759_inventoryNameOverride#?!Slope (3m)",
+  "CategoryNameOverride": "",
+  "IdToDuplicate": {
+    "Reference": {
+      "Guid": "3cc75979-18ac-46c4-9a5b-25b327d99410",
+      "Name": "Light-weight Alloy Block"
+    },
+    "IsValidReference": true
+  },
+  "MeshReference": {
+    "Reference": {
+      "Guid": "da54820b-ca24-4a42-84c3-6b1be5fd2144",
+      "Name": "Wood down slope 3m"
+    },
+    "IsValidReference": true
+  },
+  "MaterialReference": {
+    "Reference": {
+      "Guid": "00000000-0000-0000-0000-000000000000",
+      "Name": ""
+    },
+    "IsValidReference": false
+  },
+  "CostWeightHealthScaling": 1.5,
+  "CostScaling": 1.0,
+  "HealthScaling": 1.15,
+  "ArmourScaling": 1.0,
+  "WeightScaling": 1.0,
+  "VolumeScaling": 1.0,
+  "change_SizeInfo": true,
+  "change_DragSettings": true,
+  "InventoryXPosition": 1,
+  "InventoryYPosition": 3,
+  "InventoryTabOrVariantId": {
+    "Reference": {
+      "Guid": "3cc75979-18ac-46c4-9a5b-25b327d99410",
+      "Name": "Light-weight Alloy Block"
+    },
+    "IsValidReference": true
+  },
+  "DisplayOnInventory": true,
+  "MirrorLaterialFlipReplacementReference": {
+    "Reference": {
+      "Guid": "00000000-0000-0000-0000-000000000000",
+      "Name": ""
+    },
+    "IsValidReference": false
+  },
+  "MirrorVerticalFlipReplacementReference": {
+    "Reference": {
+      "Guid": "00000000-0000-0000-0000-000000000000",
+      "Name": ""
+    },
+    "IsValidReference": false
+  },
+  "ComponentId": {
+    "Guid": "a3ea61a8-018c-4277-afd9-ac0a34faa759",
+    "Name": "Alloy down slope (3m)"
+  },
+  "Description": "###Core_Structural.a3ea61a8-018c-4277-afd9-ac0a34faa759_description#?!Alloy slope of length 3m."
+}
