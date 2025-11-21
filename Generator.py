@@ -1,15 +1,20 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import json
 import os
 import glob
 import numpy as np
 import copy
 
+# --- PATH SETUP ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # --- CONFIGURATION ---
-DONOR_BLUEPRINT = "donor.blueprint"
-OUTPUT_BLUEPRINT = "generated_hull.blueprint"
-ITEMDUP_FOLDER = "ItemDup"
+DONOR_BLUEPRINT = os.path.join(BASE_DIR, "donor.blueprint")
+ITEMDUP_FOLDER = os.path.join(BASE_DIR, "ItemDup")
+SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
+
+OUTPUT_FILENAME = "generated_hull.blueprint"
 MATERIAL_FILTER = "Alloy" 
 
 # --- ROTATION SETTINGS ---
@@ -34,7 +39,7 @@ THEME_TEXT = "#000000"
 class HullDesigner:
     def __init__(self, root):
         self.root = root
-        self.root.title("FTD Hull Designer (Final + Preset)")
+        self.root.title("FTD Hull Designer (1.1)")
         self.root.configure(bg=THEME_PANEL_BG)
         
         self.points = [(0, 0)] 
@@ -43,6 +48,7 @@ class HullDesigner:
         self.var_height = tk.IntVar(value=3)
         self.var_undercut = tk.IntVar(value=5)
         self.var_floor = tk.BooleanVar(value=True)
+        self.var_save_path = tk.StringVar(value="") 
         
         # Logical Dimensions
         self.var_limit_width = tk.IntVar(value=40) 
@@ -56,6 +62,7 @@ class HullDesigner:
         self.phys_h = 600 
         
         self.setup_ui()
+        self.load_settings()
         
     def setup_ui(self):
         self.main_container = tk.Frame(self.root, bg=THEME_PANEL_BG)
@@ -70,8 +77,18 @@ class HullDesigner:
         self.btn_export = tk.Button(self.controls, text="EXPORT", command=self.run_generator, 
                                     bg=THEME_PANEL_BG, relief=tk.RAISED, bd=3, font=("MS Sans Serif", 9, "bold"), pady=5)
         self.btn_export.pack(pady=10, fill=tk.X)
+
+        # --- OUTPUT PATH ---
+        grp_path = tk.LabelFrame(self.controls, text="Output Location", bg=THEME_PANEL_BG, font=("MS Sans Serif", 9))
+        grp_path.pack(fill=tk.X, pady=5, padx=5)
         
-        # --- PRESET BUTTON (NEW) ---
+        self.ent_path = tk.Entry(grp_path, textvariable=self.var_save_path, bg="white", width=15)
+        self.ent_path.pack(fill=tk.X, padx=5, pady=2)
+        
+        tk.Button(grp_path, text="Select Folder...", command=self.select_output_folder,
+                  bg=THEME_PANEL_BG, relief=tk.RAISED, bd=2).pack(fill=tk.X, padx=5, pady=5)
+
+        # --- PRESET BUTTON ---
         tk.Button(self.controls, text="Load Preset (100m)", command=self.load_preset, 
                   bg=THEME_PANEL_BG, relief=tk.RAISED, bd=2).pack(pady=5, fill=tk.X)
         
@@ -108,7 +125,11 @@ class HullDesigner:
 
         self.lbl_info = tk.Label(self.controls, text="L-Click: Add Point\nR-Click: Undo\n\nDraw on either side\nof the center line.", 
                                  justify=tk.LEFT, bg=THEME_PANEL_BG, fg="#444")
-        self.lbl_info.pack(pady=20)
+        self.lbl_info.pack(pady=15)
+        
+        # --- WARNING LABEL (New) ---
+        self.lbl_warning = tk.Label(self.controls, text="", fg="red", bg=THEME_PANEL_BG, font=("Arial", 10, "bold"))
+        self.lbl_warning.pack(pady=5)
         
         self.lbl_cursor = tk.Label(self.controls, text="Cursor: -", width=25, bg=THEME_PANEL_BG, font=("Courier New", 9))
         self.lbl_cursor.pack(side=tk.BOTTOM, pady=5)
@@ -124,26 +145,68 @@ class HullDesigner:
         self.canvas.bind("<Button-3>", self.remove_point)
         self.canvas.bind("<Motion>", self.update_cursor)
 
+    def load_settings(self):
+        if os.path.exists(SETTINGS_FILE):
+            try:
+                with open(SETTINGS_FILE, "r") as f:
+                    data = json.load(f)
+                    saved_path = data.get("save_path", "")
+                    if saved_path and os.path.exists(saved_path):
+                        self.var_save_path.set(saved_path)
+            except Exception as e:
+                print(f"Failed to load settings: {e}")
+
+    def save_settings(self):
+        data = {
+            "save_path": self.var_save_path.get()
+        }
+        try:
+            with open(SETTINGS_FILE, "w") as f:
+                json.dump(data, f)
+        except Exception as e:
+            print(f"Failed to save settings: {e}")
+
+    def select_output_folder(self):
+        path = filedialog.askdirectory(title="Select Output Folder")
+        if path:
+            self.var_save_path.set(path)
+            self.save_settings()
+
+    def check_slope_warning(self):
+        """Checks if any segment has > 45 degree slope (dx > dz)."""
+        has_steep = False
+        if len(self.points) > 1:
+            for i in range(len(self.points) - 1):
+                z1, x1 = self.points[i]
+                z2, x2 = self.points[i+1]
+                
+                dz = z2 - z1 # Always positive because we sort/force Z
+                dx = abs(x2 - x1)
+                
+                # A slope > 45 degrees means width changes faster than length
+                if dx > dz:
+                    has_steep = True
+                    break
+        
+        if has_steep:
+            self.lbl_warning.config(text="⚠ Angle > 45° Detected\nShape may be erratic.")
+        else:
+            self.lbl_warning.config(text="")
+
     def load_preset(self):
-        """Loads the predefined hull shape."""
-        # Format: (Z_Length, X_Distance_From_Center)
-        # Calculation: (Total_Beam - 1) / 2
         self.points = [
             (0, 0),   # Tip (1m Beam)
-            (4, 2),   # User Point 1 (3m Beam -> 1 block from center)
-            (14, 4),  # User Point 2 (7m Beam -> 3 blocks from center)
-            (39, 6),  # User Point 3 (11m Beam -> 5 blocks from center)
-            (69, 6),  # User Point 4 (11m Beam -> 5 blocks from center)
-            (85, 5),  # User Point 5 (7m Beam -> 3 blocks from center)
-            (100, 3)  # User Point 6 (5m Beam -> 2 blocks from center)
+            (4, 2),   # User Point 1 
+            (14, 4),  # User Point 2 
+            (39, 6),  # User Point 3 
+            (69, 6),  # User Point 4 
+            (85, 5),  # User Point 5 
+            (100, 3)  # User Point 6 
         ]
-        
-        # Update limits to match the preset
         self.var_limit_length.set(100)
-        
-        # Force update
         self.recalc_view()
         self.update_stats()
+        self.check_slope_warning()
 
     def on_resize(self, event):
         self.phys_w = event.width
@@ -209,14 +272,12 @@ class HullDesigner:
         end_y = self.offset_y + (log_h * self.grid_size)
         
         for i in range(log_w_half * 2 + 1):
-            # Right
             xr = center_x + (i * self.grid_size)
             if xr <= end_x:
                 is_major = i % 10 == 0
                 color = THEME_GRID_MAJOR if is_major else THEME_GRID_MINOR
                 if is_major or self.grid_size > 3:
                     self.canvas.create_line(xr, start_y, xr, end_y, fill=color, tags="grid")
-            # Left
             xl = center_x - (i * self.grid_size)
             if xl >= start_x:
                 is_major = i % 10 == 0
@@ -257,17 +318,18 @@ class HullDesigner:
         gx = int(round(abs(raw_gx)))
         gz = int(round(raw_gz))
         if gz < 0: gz = 0
-        
         if not self.points or gz > self.points[-1][0]:
             self.points.append((gz, gx))
             self.redraw_shape()
             self.update_stats()
+            self.check_slope_warning()
 
     def remove_point(self, event):
         if len(self.points) > 1:
             self.points.pop()
             self.redraw_shape()
             self.update_stats()
+            self.check_slope_warning()
 
     def redraw_shape(self):
         self.canvas.delete("shape")
@@ -304,19 +366,27 @@ class HullDesigner:
         undercut = int(self.var_undercut.get())
         do_floor = self.var_floor.get()
         center_offset = int(self.var_limit_width.get())
+        save_path = self.var_save_path.get() 
         
-        generator = BlueprintGenerator(hull_profile, center_offset, height, undercut, do_floor)
+        generator = BlueprintGenerator(hull_profile, center_offset, height, undercut, do_floor, save_path)
         generator.generate()
-        messagebox.showinfo("Success", f"Generated {OUTPUT_BLUEPRINT}")
+        
+        if save_path:
+            final_location = os.path.join(save_path, OUTPUT_FILENAME)
+        else:
+            final_location = os.path.join(BASE_DIR, OUTPUT_FILENAME)
+            
+        messagebox.showinfo("Success", f"Generated {final_location}")
 
 
 class BlueprintGenerator:
-    def __init__(self, profile, center_offset, height, undercut, do_floor):
+    def __init__(self, profile, center_offset, height, undercut, do_floor, save_path):
         self.profile = profile
         self.center_offset = center_offset
         self.height = height
         self.undercut = undercut
         self.do_floor = do_floor
+        self.save_path = save_path 
         self.placements = [] 
         
         self.beam_guids = {
@@ -403,7 +473,7 @@ class BlueprintGenerator:
     def fill_stern(self):
         if not self.profile.any(): return
         stern_x_index = self.profile[-1]
-        dist_from_center = stern_x_index # Updated math
+        dist_from_center = stern_x_index 
         z_pos = 0
         start_x = -(dist_from_center - 1)
         end_x = (dist_from_center - 1)
@@ -752,7 +822,14 @@ class BlueprintGenerator:
         bp["Blueprint"]["AliveCount"] = count
         bp["SavedTotalBlockCount"] = count
         
-        with open(OUTPUT_BLUEPRINT, "w") as f: json.dump(bp, f)
+        # --- OUTPUT LOGIC ---
+        if self.save_path:
+            out_file = os.path.join(self.save_path, OUTPUT_FILENAME)
+        else:
+            # Fallback to script directory if no path selected
+            out_file = os.path.join(BASE_DIR, OUTPUT_FILENAME)
+        
+        with open(out_file, "w") as f: json.dump(bp, f)
 
 if __name__ == "__main__":
     root = tk.Tk()
