@@ -15,7 +15,6 @@ ITEMDUP_FOLDER = os.path.join(BASE_DIR, "ItemDup")
 SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 
 OUTPUT_FILENAME = "generated_hull.blueprint"
-MATERIAL_FILTER = "Alloy"
 
 # --- ROTATION SETTINGS ---
 ROT_BEAM      = 0
@@ -45,6 +44,7 @@ class HullDesigner:
         self.points = [(0, 0)]
 
         # Defaults
+        self.material_option = tk.StringVar(value='Wood')
         self.var_height = tk.IntVar(value=3)
         self.var_undercut = tk.IntVar(value=5)
         self.var_floor = tk.BooleanVar(value=True)
@@ -114,6 +114,9 @@ class HullDesigner:
         # --- GENERATOR SETTINGS ---
         grp_dim = tk.LabelFrame(self.controls, text="Generator Settings", bg=THEME_PANEL_BG, font=("MS Sans Serif", 9))
         grp_dim.pack(fill=tk.X, pady=5, padx=5)
+
+        tk.Label(grp_dim, text="Material", **lbl_opts).pack(anchor="w")
+        tk.OptionMenu(grp_dim, self.material_option, *['Wood', 'Stone', 'Alloy', 'Metal', 'Heavy Armour']).pack(pady=2)
 
         tk.Label(grp_dim, text="Deck Height:", **lbl_opts).pack(anchor="w")
         tk.Spinbox(grp_dim, from_=1, to=50, textvariable=self.var_height, width=10).pack(pady=2)
@@ -362,13 +365,14 @@ class HullDesigner:
         full_x = np.interp(full_z, z_coords, x_coords)
         hull_profile = np.round(full_x).astype(int)
 
+        material = str(self.material_option.get()).lower()
         height = int(self.var_height.get())
         undercut = int(self.var_undercut.get())
         do_floor = self.var_floor.get()
         center_offset = int(self.var_limit_width.get())
         save_path = self.var_save_path.get()
 
-        generator = BlueprintGenerator(hull_profile, center_offset, height, undercut, do_floor, save_path)
+        generator = BlueprintGenerator(hull_profile, center_offset, material, height, undercut, do_floor, save_path)
         generator.generate()
 
         if save_path:
@@ -380,7 +384,7 @@ class HullDesigner:
 
 
 class BlueprintGenerator:
-    def __init__(self, profile, center_offset, height, undercut, do_floor, save_path):
+    def __init__(self, profile, center_offset, material, height, undercut, do_floor, save_path):
         self.profile = profile
         self.center_offset = center_offset
         self.height = height
@@ -389,58 +393,110 @@ class BlueprintGenerator:
         self.save_path = save_path
         self.placements = []
 
-        self.beam_guids = {
-            4: "f63c9b75-2473-424d-9a56-b25847324143",
-            3: "44667921-6554-4589-b52c-c89794776685",
-            2: "1643d621-6452-4d38-98cd-07130b232e65",
-            1: "3cc75979-18ac-46c4-9a5b-25b327d99410",
+        self.guids = {
+            'wood': {
+                'beam_guids': {
+                    4: '05475442-0e52-4e0b-9fbb-2715f0e54f97',
+                    3: '39553630-8281-40e4-96fb-b01c1f3537e6',
+                    2: 'de36c624-8c78-4b52-8d86-431cec16a306',
+                    1: '9a0ae372-beb4-4009-b14e-36ed0715af73'
+                },
+                'slope_guids': {
+                    4: '3296c67d-6ace-44dd-8e86-335b9a90ad80',
+                    3: 'caec26b3-847c-4876-80e1-e6206003ecb5',
+                    2: 'b88679fb-0325-4c85-942f-ad9c6ed6545b',
+                    1: 'bdafa446-f615-49cb-94f3-d7652dde6cec'
+                },
+                'offset_guids': {
+                    4: {'left': '9100db0a-b961-4ec7-9cb9-b171c3436ec0', 'right': '5712f568-385b-4d8c-bf66-4f55b7d2099f'},
+                    3: {'left': '3d15d678-7c66-4bbe-bd1b-d37b7f4904c5', 'right': '37dc0159-c896-49cd-a018-e0ffc12999dc'},
+                    2: {'left': 'c9d0d3dc-9715-4629-abde-7f178d52f2fd', 'right': 'ab84a940-f992-4172-a4d1-07a9ae7e4a51'},
+                    1: {'left': '5b009725-d904-4884-a498-d29958102b87', 'right': '09963c07-3c9e-4021-9bc1-cb6d2ac880e1'}
+                }
+            },
+            'stone': {
+                'beam_guids': {
+                    4: 'c7a19161-b361-4074-8c51-2398a0a70d1b',
+                    3: 'd47815a1-9052-4885-8d17-8c9cb3eab72b',
+                    2: '6cd6c6bd-da8b-483f-ace2-fa427a07d91a',
+                    1: '710ee212-563b-42f8-acd1-57515479524d'
+                },
+                'slope_guids': {
+                    4: 'cf8b2e90-abe7-4a4f-9596-253364004394',
+                    3: '9e204cce-876c-4d9d-af0e-65ec39cf1ba4',
+                    2: '66aa8853-094a-41ef-aa96-a2d658b21305',
+                    1: '11fcac17-e3b9-47d5-aeb8-2224d86b2f1d'
+                },
+                'offset_guids': {
+                    4: {'left': 'def31246-d999-49f8-9daf-acacd802d3ec', 'right': 'e640d817-209a-42af-b478-7627a06296cc'},
+                    3: {'left': '6b0d80a1-06ea-47f6-a09f-a59084e985fb', 'right': '64b961b7-0117-4db2-8b94-2f89db082909'},
+                    2: {'left': 'd010466a-44bc-4572-96fb-94ae72f93009', 'right': '1dfa3fef-9e64-4ee4-b6a8-e89df1bba0fa'},
+                    1: {'left': '6cf8a940-889d-4caa-9ae4-53c918f4458b', 'right': '7d3650e9-342f-4008-9677-831b696f062f'}
+                }
+            },
+            'alloy': {
+                'beam_guids': {
+                    4: '9411e401-27da-4546-b805-3334f200f055',
+                    3: '649f2aec-6f59-4157-ac01-0122ce2e6dad',
+                    2: '8f9dbf41-6c2d-4e7b-855d-b2432c6942a2',
+                    1: '3cc75979-18ac-46c4-9a5b-25b327d99410'
+                },
+                'slope_guids': {
+                    4: '2a3905ff-2030-421d-a2bf-90fba71c1c5e',
+                    3: 'a3ea61a8-018c-4277-afd9-ac0a34faa759',
+                    2: 'c6176cb5-0a32-4d68-a749-8ee33b2230c1',
+                    1: '911fe222-f9b2-4892-9cd6-8b154d55b2aa'
+                },
+                'offset_guids': {
+                    4: {'left': '54b18bde-2698-4840-a2aa-a37efba89ff4', 'right': 'fdba2b5d-3570-43fb-a9e1-10a0c0bba0ef'},
+                    3: {'left': '77b5b1be-56a8-4699-b9fb-a967a03897c5', 'right': '903ed616-47a5-4aa2-a85c-f3e18ce9e620'},
+                    2: {'left': '20f74da8-3052-4e5a-8b9a-28252781f37b', 'right': 'ccb16d68-186c-4896-82e3-9e9213271ace'},
+                    1: {'left': '4929dc91-e2af-42cd-a672-b86571a0b92f', 'right': 'e3921d2a-d812-4c80-a4f6-4360b1af8631'}
+                }
+            },
+            'metal': {
+                'beam_guids': {
+                    4: 'a7f5d8de-4882-4111-9d01-436493e5b2d8',
+                    3: '46f54639-5f91-4731-93eb-e5c0a7460538',
+                    2: '2a22f176-01c2-42f2-a7d2-2c7054504aa9',
+                    1: 'ab699540-efc8-4592-bc97-204f6a874b3a'
+                },
+                'slope_guids': {
+                    4: 'db9ed060-d556-435b-945c-19c923e233d3',
+                    3: 'a09be1c6-93fd-4b54-b9ca-62e60efbc818',
+                    2: '8477bbec-974c-45bf-a1ce-49a48d5b5307',
+                    1: '5548037e-8428-43f8-bcb6-d730dbcd0a79'
+                },
+                'offset_guids': {
+                    4: {'left': 'a2983545-008e-4926-a54a-89cc56de8f48', 'right': '5a0d6e26-7939-437f-ba35-33d9b3cf193f'},
+                    3: {'left': '0358dee0-2d87-4b29-bb73-5c9e3399fd4e', 'right': 'de7aab07-7fec-438f-872a-d66b0e942b42'},
+                    2: {'left': 'aeb8c2da-d589-44dc-a4cd-4c4d35543c70', 'right': 'f4cbeb0b-fc70-439a-870f-fa9ade1cf913'},
+                    1: {'left': 'c30ac9c4-8fa1-4812-a56a-1926d2119dc5', 'right': '6d3e8b3f-b945-47e9-a77d-e0fcd1c61b69'}
+                }
+            },
+            'heavy armour': {
+                'beam_guids': {
+                    4: '867cea4e-6ea4-4fe2-a4a1-b6230308f8f1',
+                    3: '49714981-369a-4158-aff6-e562ee5f98d5',
+                    2: '242e07fa-399f-4caa-bfc2-1b77bd2bd538',
+                    1: '0c03433e-8947-4e7d-9dec-793526fe06d1'
+                },
+                'slope_guids': {
+                    4: '983ebe9d-535e-4bdb-a37f-6b681a96f5a3',
+                    3: '98467918-ec0c-47e1-8ce6-55949326eb4f',
+                    2: '525d85fc-f4d4-49ea-bebd-dc51bc562adf',
+                    1: '78b81c0a-44df-4c24-b2a5-5d273737da60'
+                },
+                'offset_guids': {
+                    4: {'left': '9965f5e6-64eb-456c-b0af-434b6fb23603', 'right': '158676b2-faca-421b-b99a-c43667cbe234'},
+                    3: {'left': '281689d3-1cce-4740-95ff-76a1c4d1a6a1', 'right': 'd20ec006-ee98-4ff3-89d0-34da13e5b253'},
+                    2: {'left': 'a03bb56f-2113-456d-939f-265c672e5e0f', 'right': 'b8a325d6-1867-4097-b768-10a6d5888d6f'},
+                    1: {'left': '1ce727a4-fc31-4ced-ab48-a6b03986341f', 'right': 'b0c3d4dd-d225-48c9-b19b-b320bf88e4c5'}
+                }
+            }
         }
-        self.slope_guids = {
-            4: "33840566-0e0a-4d01-8333-f465d84a49c9",
-            3: "0838778a-76d1-4289-8700-f5e6310f7b7a",
-            2: "0158534b-8732-40ae-a085-e0d09cf3679f",
-            1: "84951250-1854-4da5-9765-5c244a0c8980",
-        }
-        self.offset_guids = {}
-        self.load_assets()
 
-    def load_assets(self):
-        if not os.path.exists(ITEMDUP_FOLDER): return
-        files = glob.glob(os.path.join(ITEMDUP_FOLDER, "*.itemdup")) + \
-                glob.glob(os.path.join(ITEMDUP_FOLDER, "*.itemduplicateandmodify"))
-        for f in files:
-            try:
-                with open(f, 'r') as jf: data = json.load(jf)
-                name = data.get("InventoryNameOverride", "").lower()
-                fname = os.path.basename(f).lower()
-                if MATERIAL_FILTER.lower() not in name and MATERIAL_FILTER.lower() not in fname: continue
-
-                guid = data["ComponentId"]["Guid"]
-                sp, sn = data["SizeInfo"]["SizePos"], data["SizeInfo"]["SizeNeg"]
-
-                length = 0
-                if "4m" in name or "4m" in fname: length = 4
-                elif "3m" in name or "3m" in fname: length = 3
-                elif "2m" in name or "2m" in fname: length = 2
-                elif "1m" in name or "1m" in fname: length = 1
-                else:
-                    length = max(sp["x"]+sn["x"]+1, sp["y"]+sn["y"]+1, sp["z"]+sn["z"]+1)
-
-                if length == 0: continue
-
-                if "offset" not in name and "offset" not in fname:
-                    if "slope" in name or "slope" in fname:
-                        self.slope_guids[length] = guid
-                    else:
-                        self.beam_guids[length] = guid
-                else:
-                    if length not in self.offset_guids:
-                        self.offset_guids[length] = {"left": None, "right": None}
-                    if "left" in name or "left" in fname:
-                        self.offset_guids[length]["left"] = guid
-                    elif "right" in name or "right" in fname:
-                        self.offset_guids[length]["right"] = guid
-            except: pass
+        self.beam_guids, self.slope_guids, self.offset_guids = self.guids[material].values()
 
     def generate(self):
         best_placements = []

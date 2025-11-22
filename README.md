@@ -48,6 +48,7 @@ undercuts/tumblehomes (raked hulls), and seals gaps automatically.(mostly)
    - The grid auto-scales based on the length you set in "Design Limits".
 
 2. SETTINGS:
+   - Material: The block type to use for the entire hull
    - Deck Height: How tall the vertical wall of the hull is.
    - Undercut Layers: How many layers deep the hull tapers inwards (tumblehome).
    - Generate Floor: Automatically fills the flat bottom of the hull.
@@ -67,17 +68,5 @@ undercuts/tumblehomes (raked hulls), and seals gaps automatically.(mostly)
 Do NOT delete or rename these files, or the tool will break:
 
 - bin/             -> Contains the internal engine (Python).
-- ItemDup/         -> Contains the block definitions (Slopes, Beams, Offsets).
 - donor.blueprint  -> A blank template used for generation.
 - Generator.py     -> The logic script.
-
-===================
-  CUSTOM BLOCKS
-===================
-The tool comes pre-configured for ALLOY. If you want to use Metal or Wood: -WIP(does not work yet)
-
-1. Go into the "ItemDup" folder.
-2. Replace the files with .itemdup files of the material you want.
-3. CRITICAL: You must keep the naming convention in the filenames!
-   - The tool looks for: "4m", "3m", "Slope", "Beam", "Offset".
-   - For Offsets, the filename MUST contain "Left" or "Right".
